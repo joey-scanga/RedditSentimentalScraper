@@ -1,22 +1,54 @@
-import praw
+import praw, time, sys
+from dotenv import dotenv_values
 from praw.models import MoreComments
 import pandas as pd
 from transformers import pipeline
 
-reddit = praw.Reddit(client_id='X7NE499Moo8VQhudVe6zmg',
-                     client_secret='8LWwUA7UNCHAfcFJ_pNnWdeC-Rf68Q',
-                     user_agent='comment-scraper')
+config = dotenv_values(".env")
+
+reddit = praw.Reddit(client_id=config["CLIENT_ID"],
+                     client_secret=config["CLIENT_SECRET"],
+                     user_agent=config["USER_AGENT"])
+
+'''
+Get a list of hot posts from a given subreddit, returns a list of objects as in getCommentsFromOnePost().
+'''
+def getListOfPostsFromSubreddit(subName, limit=1):
+    if limit < 1:
+        print(f"Invalid number of posts (limit={limit})")
+        return
+    posts = []
+    sub = reddit.subreddit(subName)
+    i = 1
+    for post in sub.hot(limit=limit):
+        print(f"Iteration: {i}")
+        postobj = {"myid": post.id, "comments": []}
+        sub = reddit.submission(post.id)
+        j = 20
+        for top_level_comment in sub.comments:
+            if j > 20:
+                break
+            if isinstance(top_level_comment, MoreComments):
+                continue
+            postobj["comments"].append(top_level_comment.body)
+        posts.append(postobj)
+        print(f"Iteration: {i} complete")
+        i += 1
+    return posts
 
 '''
 Get a specific post.
 '''
 def getCommentsFromOnePost(postID):
-    post = {"myId": postID, "comments": []}
+    post = {"myId": postID, "comments": [], "nComments": 0}
     submission = reddit.submission(postID)
+    if not submission:
+        print(f"Invalid postID (id: {postID})")
     for top_level_comment in submission.comments:
         if isinstance(top_level_comment, MoreComments):
             continue
         post["comments"].append(top_level_comment.body)
+        post["nComments"] += 1
     return post
 
 
@@ -44,13 +76,19 @@ def getAvg(sentimentdata):
 '''
 Testing
 '''
-print("Analysis start\n")
+starttime = time.time()
 post = getCommentsFromOnePost("z4eth1")
+if not post:
+    sys.exit(-1)
+print("\nNumber of comments: ", post["nComments"], "\n")
+print("Analysis start\n")
 
 result = getAvg(getSentiment(post["comments"]))
 
 print(f"Positive: {result[0]}")
 print(f"Neutral: {result[1]}")
 print(f"Negative: {result[2]}")
+endtime = time.time()
+print("Running time: ", format(endtime - starttime, '.2f'), " seconds", sep="")
 
 

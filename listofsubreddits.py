@@ -1,30 +1,26 @@
 import praw
+from dotenv import dotenv_values
 from praw.models import MoreComments
 import pandas as pd
 from transformers import pipeline
 
-reddit = praw.Reddit(client_id='X7NE499Moo8VQhudVe6zmg',
-                     client_secret='8LWwUA7UNCHAfcFJ_pNnWdeC-Rf68Q',
-                     user_agent='comment-scraper')
+config = dotenv_values(".env")
 
-'''
-Get a specific post.
-'''
-# submission = reddit.submission("z40utz")
-# comments = []
-# for top_level_comment in submission.comments:
-#     if isinstance(top_level_comment, MoreComments):
-#         continue
-#     print(top_level_comment.body, "\n")
+reddit = praw.Reddit(client_id=config["CLIENT_ID"],
+                     client_secret=config["CLIENT_SECRET"],
+                     user_agent=config["USER_AGENT"])
 
 '''
 Get a list of hot posts from a given subreddit.
 '''
-getListOfPostsFromSubreddit(subName):
+def getListOfPostsFromSubreddit(subName, limit=1):
+    if limit < 1:
+        print(f"Invalid number of posts (limit={limit})")
+        return
     posts = []
     sub = reddit.subreddit(subName)
     i = 1
-    for post in sub.hot(limit=1):
+    for post in sub.hot(limit=limit):
         print(f"Iteration: {i}")
         postobj = {"myid": post.id, "comments": []}
         sub = reddit.submission(post.id)
@@ -65,10 +61,11 @@ def getAvg(sentimentdata):
 
 posts = getListOfPostsFromSubreddit("WallStreetBets")
 
-for post in posts:
-    result = getAvg(getSentiment(post["comments"]))
-    print(f"Positive: {result[0]}")
-    print(f"Neutral: {result[1]}")
-    print(f"Negative: {result[2]}")
+if posts:
+    for post in posts:
+        result = getAvg(getSentiment(post["comments"]))
+        print(f"Positive: {result[0]}")
+        print(f"Neutral: {result[1]}")
+        print(f"Negative: {result[2]}")
 
 
