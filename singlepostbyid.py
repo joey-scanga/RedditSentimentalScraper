@@ -1,4 +1,4 @@
-import praw, time, sys
+import praw, time, sys, re
 from dotenv import dotenv_values
 from praw.models import MoreComments
 import pandas as pd
@@ -47,7 +47,7 @@ def getCommentsFromOnePost(postID):
     for top_level_comment in submission.comments:
         if isinstance(top_level_comment, MoreComments):
             continue
-        post["comments"].append(top_level_comment.body)
+        post["comments"].append(top_level_comment.body[:512]) #Token limit is 512 characters
         post["nComments"] += 1
     return post
 
@@ -77,7 +77,9 @@ def getAvg(sentimentdata):
 Testing
 '''
 starttime = time.time()
-post = getCommentsFromOnePost("z4eth1")
+url = input("Enter a Reddit URL: ")
+postid = re.findall("\/comments\/\w+\/", url)[0][10:-1]
+post = getCommentsFromOnePost(postid)
 if not post:
     sys.exit(-1)
 print("\nNumber of comments: ", post["nComments"], "\n")
