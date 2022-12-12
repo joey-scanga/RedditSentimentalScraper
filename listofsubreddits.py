@@ -59,7 +59,7 @@ def getAvg(sentimentdata):
                 neutral += classification["score"]
     return [positive/postNum, neutral/postNum, negative/postNum]
 
-posts = getListOfPostsFromSubreddit("WallStreetBets")
+posts = getListOfPostsFromSubreddit(input("Enter subreddit name (e.g. 'WallStreetBets', 'investing'): "))
 
 if posts:
     for post in posts:
